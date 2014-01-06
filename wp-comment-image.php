@@ -156,28 +156,23 @@ class wp_comment_image{
   }
 
   function wpci_insert_comment($comment_id = '') {
-    if (empty($_FILES))
-      return $comment_id;
-
     $comment = array();
     $comment['comment_ID'] = $comment_id;
-    $this->wpci_get_image($comment['comment_ID']);
-    add_filter('pre_comment_content', array(&$this, 'wpci_pre_comment_content'), 99);
-    wp_update_comment($comment);
+
+    if ($this->wpci_get_image($comment['comment_ID'])) {
+      add_filter('pre_comment_content', array(&$this, 'wpci_pre_comment_content'), 99);
+      wp_update_comment($comment);
+    }
 
     return $comment_id;
   }
 
   function wpci_edit_comment($comment_content) {
-    if (empty($_FILES) && !isset($_POST['wpci_del']))
-      return $comment_content;
+    $comment_id = $_POST['comment_ID'];
+    $this->incre_id = 1;
 
-    if (!empty($_FILES)) {
-      $comment_id = $_POST['comment_ID'];
-      $this->incre_id = 1;
-      $this->wpci_get_image($comment_id);
+    if ($this->wpci_get_image($comment_id))
       $comment_content = $this->wpci_pre_comment_content($comment_content);
-    }
 
     if (isset($_POST['wpci_del'])) {
       foreach ($_POST['wpci_del'] as $file => $value) {
@@ -193,20 +188,38 @@ class wp_comment_image{
   }
 
   function wpci_get_image($comment_id) {
+    if (empty($_FILES) && (!isset($_POST['wpci_drop_file']) || empty($_POST['wpci_drop_file'])))
+      return false;
+    elseif (empty($_FILES) || !isset($_FILES['image']['tmp_name']) || (is_array($_FILES['image']['tmp_name']) && $_FILES['image']['tmp_name'][0] == '') || (is_string($_FILES['image']['tmp_name']) && $_FILES['image']['tmp_name'] == '')) {
+      $files = array();
+      $drop_files = explode('|', substr($_POST['wpci_drop_file'][0], 0, strrpos($_POST['wpci_drop_file'][0], '|')));
+      $drop_filenames = json_decode($_POST['wpci_drop_filename'][0]);
+      foreach ($drop_files as $id => $data) {
+        $rand_string = substr("abcdefghijklmnopqrstuvwxyz", mt_rand(0, 50), 1).substr(md5(time()), 1);
+        $tmp_file = tempnam(sys_get_temp_dir(), $rand_string);
+        file_put_contents($tmp_file, base64_decode((strpos($data, ',') !== false?substr($data, strpos($data, ',')+1):$data)));
+        $files['tmp_name'][$id] = $tmp_file;
+        if (isset($drop_filenames[$id]))
+          $files['name'][$id] = $drop_filenames[$id];
+        else
+          $files['name'][$id] = '';
+      }
+    } else
+      $files = $_FILES['image'];
+
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $i = 0;
     $j = 0;
     if ($this->incre_id) {
-      $files = $this->wpci_get_image_list($comment_id);
-      if (!empty($files)) {
-        foreach ($files as $file) {
+      $file_list = $this->wpci_get_image_list($comment_id);
+      if (!empty($file_list)) {
+        foreach ($file_list as $file) {
           $file = substr($file, strrpos($file, '/')+1);
           $j = max($j, (int)substr($file, strpos($file, '-')+1, strpos($file, '.')-strpos($file, '-')-1)+1);
         }
       }
     }
 
-    $files = $_FILES['image'];
     if (is_string($files['name'])) {
       $files['name'] = array($files['name']);
       $files['tmp_name'] = array($files['tmp_name']);
@@ -250,6 +263,8 @@ class wp_comment_image{
       }
     }
     $_FILES = array();
+    if (isset($_POST['wpci_drop_file']))
+      unset($_POST['wpci_drop_file']);
 
     if (isset($error)) {
       wp_delete_comment($comment_id, true);
@@ -278,7 +293,66 @@ class wp_comment_image{
   }
 
   function wpci_upload_input() {
-      return '<div id="wpci-input" style="padding:0;width:90%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'"><input type="text" name="wpci-text" id="wpci-text" style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'" readonly/><input type="button" id="wpci-button" style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="Choose..." /><span id="wpci-file-wrap" style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"><input type="file" multiple id="wpci-file" style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;" accept="image/jpeg,image/png,image/gif" name="image[]" onchange="var files=this.files;var file=\'\';for(var i=0;i<files.length-1;i++){file += files[i].name + \',&nbsp;\';}file += files[i].name;document.getElementById(\'wpci-text\').value=file;document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';document.getElementById(\'wpci-clear\').style.display=\'inline-block\';"/></span><span id="wpci-clear" style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;right:162px;top:2px;position:relative;z-index:4;background-color:#eee;box-shadow:0 0 2px #000;color:#4c4c4c;border:none;margin:0;display:none;cursor:pointer;" onclick="document.getElementById(\'wpci-file-wrap\').innerHTML=document.getElementById(\'wpci-file-wrap\').innerHTML;document.getElementById(\'wpci-text\').value=\''.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'\';this.style.display=\'none\';">clear</span></div>';
+    return '
+      <div id="wpci-input" style="padding:0;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'"><input type="text" name="wpci-text" id="wpci-text" style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'" readonly/><input type="button" id="wpci-button" style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="Choose..." /><span id="wpci-file-wrap" style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"><input type="file" multiple id="wpci-file" style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;" accept="image/jpeg,image/png,image/gif" name="image[]" onchange="if(!window.File || !window.FileList || !window.FileReader){var files=this.files;var file=\'\';for(var i=0;i<files.length-1;i++){file += files[i].name + \',&nbsp;\';}file += files[i].name;document.getElementById(\'wpci-text\').value=file;document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';document.getElementById(\'wpci-clear\').style.display=\'inline-block\';}"/></span><span id="wpci-drop" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;border:1px dashed transparent;">or drop files here</span><input id="wpci-drop-file" name="wpci_drop_file[]" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename[]" style="display:none;"><span id="wpci-clear" style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:0;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;" onclick="if(window.File && window.FileList && window.FileReader){wpciDnd();}else{document.getElementById(\'wpci-file-wrap\').innerHTML=document.getElementById(\'wpci-file-wrap\').innerHTML;}document.getElementById(\'wpci-text\').value=\''.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'\';this.style.display=\'none\';document.getElementById(\'wpci-text\').style.width=\'60%\';document.getElementById(\'wpci-text\').style.paddingRight=\'0.5%\';document.getElementById(\'wpci-error\').style.display=\'none\';">clear</span><div id="wpci-error" style="color:red;font-size:14px;padding:10px 0;display:none;">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</div></div>
+      
+      <script>
+        if (window.File && window.FileList && window.FileReader) {
+          var error = false;
+          wpciDnd();
+        }
+        function wpciDnd() {
+          document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
+          document.getElementById("wpci-file").addEventListener("change", FileSelectHandler, false);
+          var filedrop = document.getElementById("wpci-drop");
+          filedrop.addEventListener("dragover", FileDragHover, false);
+          filedrop.addEventListener("dragleave", FileDragHover, false);
+          filedrop.addEventListener("drop", FileSelectHandler, false);
+          filedrop.style.display = "inline-block";
+        }
+        function FileDragHover(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          e.target.style.borderColor = (e.type == "dragover" ? "#000" : "transparent");
+        }
+        function FileSelectHandler(e) {
+          FileDragHover(e);
+          var files = e.target.files || e.dataTransfer.files;
+          var o =[0, "", []];
+          for (var i = 0; i < files.length; i++) {
+            f = files[i];
+            o = ParseFile(f, o[0], o[1], o[2]);
+          }
+          if (o[0]) {
+            document.getElementById("'.(!is_admin()?'wpci-input").parentNode':'post")').'.enctype="multipart/form-data";
+            document.getElementById("wpci-clear").style.display="inline-block";
+            document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
+            document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
+            document.getElementById("wpci-text").value = o[1].substring(0, o[1].length - 2);
+            document.getElementById("wpci-drop-filename").value = JSON.stringify(o[2]);
+          }
+          if (error) {
+            document.getElementById("wpci-error").style.display="block";
+          }
+        }
+        function ParseFile(file, j, t, fin) {
+          if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
+            t = t + file.name + ", ";
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              document.getElementById("wpci-drop-file").value += e.target.result.match(/,(.*)$/)[1];
+              document.getElementById("wpci-drop-file").value += "|";
+            }
+            reader.readAsDataURL(file);
+            fin[j] = file.name;
+            return [++j, t, fin];
+          } else {
+            error = true;
+            return [j, t, fin];
+          }
+        }
+      </script>
+    ';
   }
 
   function wpci_comment_form($form = '') {
