@@ -109,7 +109,7 @@ class wp_comment_image{
       <input type="text" class="regular-text" name="wpci_class" value="<?php echo htmlentities($this->options['wpci_class']); ?>" /></p>
       <p>Add upload button (Optional):<br/>
       <label><input type="radio" name="wpci_input" value="1" <?php if ($this->options['wpci_input'] == '1') { ?> checked="checked"<?php } ?>/> Automatic, may not work depending on your theme</label><br/>
-      <label><input type="radio" name="wpci_input" value="0" <?php if ($this->options['wpci_input'] == '0') { ?> checked="checked"<?php } ?>/> Manual, add enctype="multipart/form-data" and &lt;input type="file" name="image[]" multiple/&gt; to comment form</label></p>
+      <label><input type="radio" name="wpci_input" value="0" <?php if ($this->options['wpci_input'] == '0') { ?> checked="checked"<?php } ?>/> Manual, add <span style="padding:2px 5px;border:1px solid #aaa;">enctype="multipart/form-data"</span> and <span style="padding:2px 5px;border:1px solid #aaa;">&lt;input type="file" name="image[]" multiple/&gt;</span> to comment form</label></p>
       <p>Text before input button (Optional):<br/>
       <textarea rows="5" cols="50" class="large-text" name="wpci_input_text"><?php echo htmlentities($this->options['wpci_input_text']); ?></textarea><br/>
       * Use [wpci_limit] as maximum upload files and [wpci_size] as maximum file size</p>
@@ -191,7 +191,7 @@ class wp_comment_image{
     if (isset($_POST['wpci_drop_file']) && $_POST['wpci_drop_file'] !== '') {
       $files = array();
       $drop_files = explode('|', substr($_POST['wpci_drop_file'], 0, strrpos($_POST['wpci_drop_file'], '|')));
-      $drop_filenames = json_decode($_POST['wpci_drop_filename'][0]);
+      $drop_filenames = json_decode($_POST['wpci_drop_filename']);
       foreach ($drop_files as $id => $data) {
         $rand_string = substr("abcdefghijklmnopqrstuvwxyz", mt_rand(0, 50), 1).substr(md5(time()), 1);
         $tmp_file = tempnam(sys_get_temp_dir(), $rand_string);
@@ -294,8 +294,52 @@ class wp_comment_image{
 
   function wpci_upload_input() {
     return '
-      <div id="wpci-input" style="padding:0;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'"><input type="text" name="wpci-text" id="wpci-text" style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'" readonly/><input type="button" id="wpci-button" style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'" value="Choose..." /><span id="wpci-file-wrap" style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"><input type="file" multiple id="wpci-file" style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;" accept="image/jpeg,image/png,image/gif" name="image[]" onchange="if(!window.File || !window.FileList || !window.FileReader){var files=this.files;var file=\'\';for(var i=0;i<files.length-1;i++){file += files[i].name + \',&nbsp;\';}file += files[i].name;document.getElementById(\'wpci-text\').value=file;document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';document.getElementById(\'wpci-clear\').style.display=\'inline-block\';}"/></span><span id="wpci-drop" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;border:1px dashed transparent;">or drop files here</span><input id="wpci-drop-file" name="wpci_drop_file" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename[]" style="display:none;"><span id="wpci-clear" style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:0;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;" onclick="if(window.File && window.FileList && window.FileReader){wpciDnd();}else{document.getElementById(\'wpci-file-wrap\').innerHTML=document.getElementById(\'wpci-file-wrap\').innerHTML;}document.getElementById(\'wpci-text\').value=\''.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'\';this.style.display=\'none\';document.getElementById(\'wpci-text\').style.width=\'60%\';document.getElementById(\'wpci-text\').style.paddingRight=\'0.5%\';document.getElementById(\'wpci-error\').style.display=\'none\';document.getElementById(\'wpci-drop-file\').value=\'\';document.getElementById(\'wpci-drop-filename\').value=\'\';">clear</span><div id="wpci-error" style="color:red;font-size:14px;padding:10px 0;display:none;">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</div></div>
-      
+<div id="wpci-input" style="padding:0;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'">
+<input type="text" name="wpci-text" id="wpci-text" readonly
+  style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
+ value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'"
+><input type="button" id="wpci-button" value="Choose..."
+ style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
+><span id="wpci-file-wrap"
+ style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"
+>
+<input type="file" multiple id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
+ style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;"
+ onchange="
+   if(!window.File || !window.FileList || !window.FileReader){
+     var files=this.files, file=\'\';
+     for(var i=0;i<files.length-1;i++){
+      file += files[i].name + \', \';
+     }
+     file += files[i].name;
+     document.getElementById(\'wpci-text\').value=file;
+     document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';
+     document.getElementById(\'wpci-clear\').style.display=\'inline-block\';
+   }
+ "
+></span>
+<span id="wpci-drop"
+ style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;border:1px dashed transparent;"
+>or drop files here</span>
+<input id="wpci-drop-file" name="wpci_drop_file" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename" value="" style="display:none;"><span id="wpci-clear"
+ style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:0;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;"
+ onclick="
+   if(window.File && window.FileList && window.FileReader){
+     wpciDnd();
+   }else{
+     document.getElementById(\'wpci-file-wrap\').innerHTML=document.getElementById(\'wpci-file-wrap\').innerHTML;
+   }
+   document.getElementById(\'wpci-text\').value=\''.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'\';
+   this.style.display=\'none\';
+   document.getElementById(\'wpci-text\').style.width=\'60%\';
+   document.getElementById(\'wpci-text\').style.paddingRight=\'0.5%\';
+   document.getElementById(\'wpci-error\').style.display=\'none\';
+   document.getElementById(\'wpci-drop-file\').value=\'\';
+   document.getElementById(\'wpci-drop-filename\').value=\'\';
+ "
+>clear</span>
+<div id="wpci-error" style="color:red;font-size:14px;padding:10px 0;display:none;">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</div>
+</div>
       <script>
         if (window.File && window.FileList && window.FileReader) {
           var error = false;
@@ -318,37 +362,45 @@ class wp_comment_image{
         function FileSelectHandler(e) {
           FileDragHover(e);
           var files = e.target.files || e.dataTransfer.files;
-          var o =[0, "", []];
+          var fn = document.getElementById("wpci-drop-filename").value;
+          if (fn !== "") {
+            fn = JSON.parse(fn);
+          } else {
+            fn = [];
+          }
+          var o = [0, fn], t = "";
           for (var i = 0; i < files.length; i++) {
             f = files[i];
-            o = ParseFile(f, o[0], o[1], o[2]);
+            o = ParseFile(f, o[0], o[1]);
           }
           if (o[0]) {
-            document.getElementById("'.(!is_admin()?'wpci-input").parentNode':'post")').'.enctype="multipart/form-data";
             document.getElementById("wpci-clear").style.display="inline-block";
             document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
             document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
-            document.getElementById("wpci-text").value = o[1].substring(0, o[1].length - 2);
-            document.getElementById("wpci-drop-filename").value = JSON.stringify(o[2]);
+            for (i = 0; i < o[1].length-1; i++) {
+              t = t + o[1][i] + ", ";
+            }
+            t += o[1][i];
+            document.getElementById("wpci-text").value = t;
+            document.getElementById("wpci-drop-filename").value = JSON.stringify(o[1]);
           }
           if (error) {
             document.getElementById("wpci-error").style.display="block";
           }
         }
-        function ParseFile(file, j, t, fin) {
+        function ParseFile(file, j, fin) {
           if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
-            t = t + file.name + ", ";
             var reader = new FileReader();
             reader.onload = function(e) {
               document.getElementById("wpci-drop-file").value += e.target.result.match(/,(.*)$/)[1];
               document.getElementById("wpci-drop-file").value += "|";
             }
             reader.readAsDataURL(file);
-            fin[j] = file.name;
-            return [++j, t, fin];
+            fin[fin.length] = file.name;
+            return [++j, fin];
           } else {
             error = true;
-            return [j, t, fin];
+            return [j, fin];
           }
         }
       </script>
