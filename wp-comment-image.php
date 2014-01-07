@@ -345,7 +345,7 @@ class wp_comment_image{
 </div>
       <script>
         if (window.File && window.FileList && window.FileReader) {
-          var error = false;
+          var t = "", j = 0, fn = [];
           wpciDnd();
         }
         function wpciDnd() {
@@ -365,49 +365,43 @@ class wp_comment_image{
         function FileSelectHandler(e) {
           FileDragHover(e);
           var files = e.target.files || e.dataTransfer.files;
-          var fn = document.getElementById("wpci-drop-filename").value;
-          if (fn !== "") {
-            fn = JSON.parse(fn);
-          } else {
-            fn = [];
-          }
-          var o = [0, fn], t = "";
-          for (var i = 0; i < files.length; i++) {
+          for (var i = 0; i < files.length-1; i++) {
             f = files[i];
-            o = ParseFile(f, o[0], o[1]);
-          }
-          if (o[0]) {
-            document.getElementById("wpci-clear").style.display="inline-block";
-            document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
-            document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
-            for (i = 0; i < o[1].length-1; i++) {
-              t = t + o[1][i] + ", ";
-            }
-            t += o[1][i];
-            document.getElementById("wpci-text").value = t;
-            document.getElementById("wpci-drop-filename").value = JSON.stringify(o[1]);
-          }
-          if (error) {
-            document.getElementById("wpci-error").style.display="block";
-          }
-        }
-        function ParseFile(file, j, fin) {
-          if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
+            //readFile(f, 
             var reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = ParseFile(f, 0);
+            reader.readAsDataURL(f);
+          }
+          var reader = new FileReader();
+          reader.onload = ParseFile(files[i], 1);
+          reader.readAsDataURL(files[i]);
+        }
+        function ParseFile(file, o) {
+          return function(e) {
+            if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
               var d = e.target.result.match(/,(.*)$/)[1];
               var s = document.getElementById("wpci-drop-file").value;
               if (s.indexOf(d) == -1) {
                 s = s + d + "|";
                 document.getElementById("wpci-drop-file").value = s;
+                fn[fn.length] = file.name;
+                j++;
               }
+            } else {
+              document.getElementById("wpci-error").style.display="block";
             }
-            reader.readAsDataURL(file);
-            fin[fin.length] = file.name;
-            return [++j, fin];
-          } else {
-            error = true;
-            return [j, fin];
+            if (o && j) {
+              document.getElementById("wpci-clear").style.display="inline-block";
+              document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
+              document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
+              t = "";
+              for (i = 0; i < fn.length-1; i++) {
+                t = t + fn[i] + ", ";
+              }
+              t += fn[i];
+              document.getElementById("wpci-text").value = t;
+              document.getElementById("wpci-drop-filename").value = JSON.stringify(fn);
+            }
           }
         }
       </script>
