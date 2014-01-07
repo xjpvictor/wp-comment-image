@@ -180,7 +180,7 @@ class wp_comment_image{
           unlink($this->options['wpci_dir'].$file);
         if (file_exists($this->options['wpci_dir'].$file.'-t.jpg'))
           unlink($this->options['wpci_dir'].$file.'-t.jpg');
-        $comment_content = preg_replace('/<br\/><a href="[^"]+'.$file.'" title="[^"]+"[^>]*><img src="[^"]+'.$file.'(-t.jpg)?" alt="[^"]+"[^>]*><\/a><br\/>/', '', $comment_content);
+        $comment_content = preg_replace('/<br\/><a href="[^"]+'.$file.'" title="[^"]*"[^>]*><img src="[^"]+'.$file.'(-t.jpg)?" alt="[^"]*"[^>]*><\/a><br\/>/', '', $comment_content);
       }
     }
 
@@ -191,7 +191,7 @@ class wp_comment_image{
     if (isset($_POST['wpci_drop_file']) && $_POST['wpci_drop_file'] !== '') {
       $files = array();
       $drop_files = explode('|', substr($_POST['wpci_drop_file'], 0, strrpos($_POST['wpci_drop_file'], '|')));
-      $drop_filenames = json_decode($_POST['wpci_drop_filename']);
+      $drop_filenames = json_decode(str_replace('\\"', '"', $_POST['wpci_drop_filename']));
       foreach ($drop_files as $id => $data) {
         $rand_string = substr("abcdefghijklmnopqrstuvwxyz", mt_rand(0, 50), 1).substr(md5(time()), 1);
         $tmp_file = tempnam(sys_get_temp_dir(), $rand_string);
@@ -235,7 +235,7 @@ class wp_comment_image{
         $type = finfo_file($finfo, $tmp_file);
         if ($type == 'image/jpeg' || $type == 'image/png' || $type == 'image/gif') {
           $ext = str_replace('jpeg', 'jpg', substr($type, strpos($type, '/')+1));
-          $file_name = $comment_id.'-'.($i+$j).'.'.$ext;
+          $file_name = $comment_id.'-'.($i+$j).'-'.time().'.'.$ext;
           $image = wp_get_image_editor($tmp_file);
           if (!is_wp_error($image)) {
             $size = $image->get_size();
@@ -325,7 +325,7 @@ class wp_comment_image{
  style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;border:1px dashed transparent;"
 >or drop files here</span>
 <input id="wpci-drop-file" name="wpci_drop_file" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename" value="" style="display:none;"><span id="wpci-clear"
- style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:0;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;"
+ style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;"
  onclick="
    if(window.File && window.FileList && window.FileReader){
      wpciDnd();
