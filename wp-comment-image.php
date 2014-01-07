@@ -248,9 +248,12 @@ class wp_comment_image{
             } else
               $this->images[$file_name] = array('0', $name);
           }
-          if (!file_exists($this->options['wpci_dir'].$file_name))
-            move_uploaded_file($tmp_file, $this->options['wpci_dir'].$file_name);
-          elseif (file_exists($tmp_file))
+          if (!file_exists($this->options['wpci_dir'].$file_name)) {
+            if (is_uploaded_file($tmp_file))
+              move_uploaded_file($tmp_file, $this->options['wpci_dir'].$file_name);
+            else
+              rename($tmp_file, $this->options['wpci_dir'].$file_name);
+          } elseif (file_exists($tmp_file))
             unlink($tmp_file);
           $i++;
         } elseif (file_exists($tmp_file)) {
@@ -392,8 +395,12 @@ class wp_comment_image{
           if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
             var reader = new FileReader();
             reader.onload = function(e) {
-              document.getElementById("wpci-drop-file").value += e.target.result.match(/,(.*)$/)[1];
-              document.getElementById("wpci-drop-file").value += "|";
+              var d = e.target.result.match(/,(.*)$/)[1];
+              var s = document.getElementById("wpci-drop-file").value;
+              if (s.indexOf(d) == -1) {
+                s = s + d + "|";
+                document.getElementById("wpci-drop-file").value = s;
+              }
             }
             reader.readAsDataURL(file);
             fin[fin.length] = file.name;
