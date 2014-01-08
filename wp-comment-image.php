@@ -191,7 +191,7 @@ class wp_comment_image{
     if (isset($_POST['wpci_drop_file']) && $_POST['wpci_drop_file'] !== '') {
       $files = array();
       $drop_files = explode('|', substr($_POST['wpci_drop_file'], 0, strrpos($_POST['wpci_drop_file'], '|')));
-      $drop_filenames = json_decode(str_replace('\\"', '"', $_POST['wpci_drop_filename']));
+      $drop_filenames = json_decode(preg_replace('/\\\\(\S)/', '$1', $_POST['wpci_drop_filename']));
       foreach ($drop_files as $id => $data) {
         $rand_string = substr("abcdefghijklmnopqrstuvwxyz", mt_rand(0, 50), 1).substr(md5(time()), 1);
         $tmp_file = tempnam(sys_get_temp_dir(), $rand_string);
@@ -279,7 +279,7 @@ class wp_comment_image{
   function wpci_pre_comment_content($comment) {
     if (!empty($this->images)) {
       foreach ($this->images as $file_name => $et) {
-        $comment .= '<br/><a href="'.$this->options['wpci_url'].$file_name.'" title="'.$et[1].'"><img src="'.$this->options['wpci_url'].$file_name.($et[0]?'-t':'').'.jpg'.'" alt="'.$et[1].'" /></a><br/>';
+        $comment .= '<br/><a href="'.$this->options['wpci_url'].$file_name.'" title="'.htmlentities($et[1]).'"><img src="'.$this->options['wpci_url'].$file_name.($et[0]?'-t':'').'.jpg'.'" alt="'.htmlentities($et[1]).'" /></a><br/>';
       }
     }
     return $comment;
@@ -297,7 +297,7 @@ class wp_comment_image{
 
   function wpci_upload_input() {
     return '
-<div id="wpci-input" style="padding:0;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'">
+<div id="wpci-input" style="padding:0 0 15px;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'">
 <input type="text" name="wpci-text" id="wpci-text" readonly
   style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
  value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'"
@@ -324,6 +324,7 @@ class wp_comment_image{
 <span id="wpci-drop"
  style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;border:1px dashed transparent;"
 >or drop files here</span>
+<div id="wpci-list" style="display:none;width:98%;min-height:100px;padding:10px 1%;margin:15px 0 0;border-width:1px 1px 1px;border-style:dashed;border-color:#444;">&nbsp;</div>
 <input id="wpci-drop-file" name="wpci_drop_file" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename" value="" style="display:none;"><span id="wpci-clear"
  style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;"
  onclick="
@@ -337,6 +338,8 @@ class wp_comment_image{
    document.getElementById(\'wpci-text\').style.width=\'60%\';
    document.getElementById(\'wpci-text\').style.paddingRight=\'0.5%\';
    document.getElementById(\'wpci-error\').style.display=\'none\';
+   document.getElementById(\'wpci-list\').style.display=\'none\';
+   document.getElementById(\'wpci-button\').value=\'Choose...\';
    document.getElementById(\'wpci-drop-file\').value=\'\';
    document.getElementById(\'wpci-drop-filename\').value=\'\';
  "
@@ -392,6 +395,8 @@ class wp_comment_image{
             }
             if (o && j) {
               document.getElementById("wpci-clear").style.display="inline-block";
+              document.getElementById("wpci-list").style.display="block";
+              document.getElementById("wpci-button").value="Add more...";
               document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
               document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
               t = "";
@@ -438,7 +443,7 @@ class wp_comment_image{
       echo '<p>Select to delete image:</p>';
       foreach ($files as $file) {
         $file = substr($file, strrpos($file, '/')+1);
-        echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.$file.'" /></label>';
+        echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.htmlentities($file).'" /></label>';
       }
     } else
       echo 'No image';
