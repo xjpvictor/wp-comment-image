@@ -100,11 +100,11 @@ class wp_comment_image{
       <p>Directory for images:<br/>
       <input required type="text" class="regular-text" name="wpci_dir" value="<?php echo htmlentities($this->options['wpci_dir']); ?>" /></p>
       <p>Thumbnail width:<br/>
-      <input required type="text" size="4" name="wpci_width" value="<?php echo $this->options['wpci_width']; ?>" /> px</p>
+      <input required type="number" min="0" size="4" name="wpci_width" value="<?php echo $this->options['wpci_width']; ?>" /> px</p>
       <p>Maximum image file size (0 for unlimited, must be less than <?php echo $this->upload_limit; ?>):<br/>
-      <input required type="text" size="4" name="wpci_size" value="<?php echo $this->options['wpci_size']; ?>" /> MB</p>
+      <input required type="number" min="0" max="<?php echo $this->upload_limit; ?>" size="4" name="wpci_size" value="<?php echo $this->options['wpci_size']; ?>" /> MB</p>
       <p>Maximum number of files uploaded (0 for unlimited):<br/>
-      <input required type="text" size="4" name="wpci_limit" value="<?php echo $this->options['wpci_limit']; ?>" /></p>
+      <input required type="number" min="0" size="4" name="wpci_limit" value="<?php echo $this->options['wpci_limit']; ?>" /></p>
       <p>CSS class for images (Optional, separate by space):<br/>
       <input type="text" class="regular-text" name="wpci_class" value="<?php echo htmlentities($this->options['wpci_class']); ?>" /></p>
       <p>Add upload button (Optional):<br/>
@@ -124,6 +124,7 @@ class wp_comment_image{
     if (isset($_POST['wpci_update'])) {
       if (array_key_exists('wpci_url', $_POST)) {
         foreach ($this->options_key as $option) {
+          $error = false;
           if (isset($_POST[$option]) && $_POST[$option] !== $this->options[$option]) {
             if ($option == 'wpci_dir') {
               if (substr($_POST[$option], -1) !== '/')
@@ -131,6 +132,7 @@ class wp_comment_image{
               if (!file_exists($_POST[$option])) {
                 if (!mkdir($_POST[$option])) {
                   $this->message = 'Error create directory';
+                  $error = true;
                 }
               }
             } elseif ($option == 'wpci_url') {
@@ -139,8 +141,10 @@ class wp_comment_image{
             } elseif ($option == 'wpci_size') {
               $_POST[$option] = round(min($_POST[$option], $this->upload_limit), 2);
             }
-            update_option($option, $_POST[$option]);
-            $this->options[$option] = $_POST[$option];
+            if (!$error) {
+              update_option($option, $_POST[$option]);
+              $this->options[$option] = $_POST[$option];
+            }
           }
         }
       }
@@ -302,7 +306,7 @@ class wp_comment_image{
 ><span id="wpci-file-wrap"
  style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"
 >
-<input type="file" multiple id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
+<input type="file"'.((!is_admin() && $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
  style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;"
  onchange="
    if(!window.File || !window.FileList || !window.FileReader){
