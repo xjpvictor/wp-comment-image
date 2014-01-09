@@ -470,6 +470,12 @@ class wp_comment_image{
           document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-item-" + i));
           wpciUpdateHTML(0);
         }
+        function wpciSelectAll(v) {
+          var elem = document.getElementById("wpci-image-list").children;
+          for (var i = 0; i < elem.length; i++) {
+            elem[i].children[0].checked = v;
+          }
+        }
       </script>
     ';
   }
@@ -501,14 +507,14 @@ class wp_comment_image{
 
     $files = $this->wpci_get_image_list($comment_id);
     if (!empty($files)) {
-      echo '<p>Select to delete image:</p>';
+      echo '<p><input type="checkbox" name="wpci_selectall" onclick="if (this.checked) {wpciSelectAll(1);} else {wpciSelectAll(0);}"> Select to delete image:</p><div id="wpci-image-list">';
       foreach ($files as $file) {
         $file = substr($file, strrpos($file, '/')+1);
         echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.$file.'" /></label>';
       }
     } else
       echo 'No image';
-    echo '<br/>'.$this->wpci_upload_input();
+    echo '</div><br/>'.$this->wpci_upload_input();
     return true;
   }
 
