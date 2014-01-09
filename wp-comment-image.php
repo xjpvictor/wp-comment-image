@@ -374,29 +374,54 @@ class wp_comment_image{
                 h.appendChild(document.createTextNode(file.name));
                 var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\\\'/g, "&#39;");
                 h.innerHTML = "";
-                l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-img-" + j + "\"><input name=\"wpci-drop-filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><img style=\"max-width:100px;margin:0;padding:0;border:none;\"  src=\"" + m + "\" /></div>";
-                l.style.display="block";
-                wpciUpdateHTML();
+                l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-img-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
+                wpciUpdateHTML(j);
+                wpciUpdateCanvas(j, m);
               }
+              m = "";
+              d = "";
             } else {
               document.getElementById("wpci-error").style.display="block";
             }
           }
         }
-        function wpciUpdateHTML() {
+        function wpciUpdateCanvas(i, m) {
+          var img = new Image();
+          img.onload = function(i, m) {
+            return function() {
+              var c = document.getElementById("wpci-list-canvas-" + i);
+              var mw = c.style.maxWidth.match(/[0-9]+/);
+              var ctx = c.getContext("2d");
+              if (img.width > mw) {
+                img.height *= mw / img.width;
+                img.width = mw;
+              }
+              c.width = img.width;
+              c.height = img.height;
+              ctx.drawImage(img, 0, 0, img.width, img.height);
+              m = c.toDataURL();
+              document.getElementById("wpci-list-image-" + i).innerHTML = "<img src=\"" + m + "\" style=\"max-width:100px;margin:0;padding:0;border:none;\"/>";
+            };
+          }(i, m);
+          img.src = m;
+        }
+        function wpciUpdateHTML(i) {
           var p = document.getElementById("wpci-list").children;
           if (p.length) {
-            document.getElementById("wpci-clear").style.display="inline-block";
-            document.getElementById("wpci-button").value="Add more...";
-            document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
-            document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
-            var t = "";
-            for (var i = 0; i < p.length-1; i++) {
-              t += p[i].children[0].value + ", ";
+            if (i) {
+              var t = document.getElementById("wpci-text").value + ", " + p[i].children[0].value;;
+            } else {
+              var t = p[i].children[0].value;
+              document.getElementById("wpci-clear").style.display="inline-block";
+              document.getElementById("wpci-button").value="Add more...";
+              document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
+              document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
+              document.getElementById("wpci-list").style.display="block";
             }
-            t += p[i].children[0].value;
+            for (++i; i < p.length; i++) {
+              t += ", " + p[i].children[0].value;
+            }
             document.getElementById("wpci-text").value = t;
-            document.getElementById("wpci-list").style.display="block";
           } else {
             wpciClear();
           }
@@ -418,7 +443,7 @@ class wp_comment_image{
         }
         function wpciDelete(i) {
           document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-img-" + i));
-          wpciUpdateHTML();
+          wpciUpdateHTML(0);
         }
       </script>
     ';
