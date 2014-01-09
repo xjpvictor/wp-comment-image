@@ -304,7 +304,7 @@ class wp_comment_image{
 ><input type="button" id="wpci-button" value="Choose..."
  style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
 ><span id="wpci-file-wrap"
- style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"
+ style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.5em;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"
 >
 <input type="file"'.((!is_admin() && $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
  style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;"
@@ -321,8 +321,8 @@ class wp_comment_image{
    }
  "
 ></span>
-<span id="wpci-drop" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;">or drop files here</span>
-<div id="wpci-list" style="display:none;width:98%;max-width:620px;min-height:100px;padding:10px 1%;margin:15px 0 0;border-width:1px 1px 1px;border-style:dashed;border-color:#444;"></div>
+<div id="wpci-drop-text" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:15px 0 0;vertical-align:middle;">or drop files here</div>
+<div id="wpci-list" style="display:none;width:98%;max-width:620px;min-height:100px;padding:52px 1% 10px;position:relative;top:-52px;margin:15px 0 -52px;border-width:1px 1px 1px;border-style:dashed;border-color:#444;"></div>
 <div id="wpci-list-hidden" style="display:none;"></div>
 <span id="wpci-clear"
  style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;" onclick="wpciClear()">clear</span>
@@ -330,24 +330,43 @@ class wp_comment_image{
 </div>
       <script>
         if (window.File && window.FileList && window.FileReader) {
+          var out = true;
+          var timeout = -1;
           wpciDnd();
+          document.getElementById("wpci-drop-text").style.display = "block";
         }
         function wpciDnd() {
           document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
           document.getElementById("wpci-file").addEventListener("change", wpciFileSelectHandler, false);
-          var filedrop = document.getElementById("wpci-drop");
+          document.getElementById("wpci-list").addEventListener("drop", wpciFileSelectHandler, false);
+          var filedrop = document.getElementsByTagName("body")[0];
           filedrop.addEventListener("dragover", wpciFileDragHover, false);
           filedrop.addEventListener("dragleave", wpciFileDragHover, false);
-          filedrop.addEventListener("drop", wpciFileSelectHandler, false);
-          filedrop.style.display = "inline-block";
         }
         function wpciFileDragHover(e) {
           e.stopPropagation();
           e.preventDefault();
           if (e.type == "dragover") {
+            out = false;
+            document.getElementById("wpci-drop-text").style.paddingTop = "13px";
+            document.getElementById("wpci-drop-text").style.paddingLeft = "15px";
             document.getElementById("wpci-list").style.display = "block";
-          } else if (e.type == "dragleave" && document.getElementById("wpci-list").innerHTML == "" ) {
-            document.getElementById("wpci-list").style.display = "none";
+            document.getElementById("wpci-list").style.boxShadow = "0 0 2px #000";
+            document.getElementById("wpci-list").style.borderStyle = "solid";
+          } else if (e.type == "dragleave") {
+            out = true;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+              if (out) {
+                if (document.getElementById("wpci-list").innerHTML == "") {
+                  document.getElementById("wpci-list").style.display = "none";
+                  document.getElementById("wpci-drop-text").style.paddingTop = "3px";
+                  document.getElementById("wpci-drop-text").style.paddingLeft = "5px";
+                }
+                document.getElementById("wpci-list").style.boxShadow = "0 0 0";
+                document.getElementById("wpci-list").style.borderStyle = "dashed";
+              }
+            }, 100);
           }
         }
         function wpciFileSelectHandler(e) {
@@ -365,7 +384,7 @@ class wp_comment_image{
         function wpciParseFile(file) {
           return function(e) {
             var l = document.getElementById("wpci-list");
-            if ('.(!is_admin() && $this->options['wpci_limit']?'l.children.length < '.($this->options['wpci_limit']-1).' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
+            if ('.(!is_admin() && $this->options['wpci_limit']?'l.children.length < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
               var m = e.target.result;
               var d = m.match(/,(.*)$/)[1];
               if (l.innerHTML.indexOf(d) == -1) {
@@ -374,7 +393,7 @@ class wp_comment_image{
                 h.appendChild(document.createTextNode(file.name));
                 var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\\\'/g, "&#39;");
                 h.innerHTML = "";
-                l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-img-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
+                l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
                 wpciUpdateHTML(j);
                 wpciUpdateCanvas(j, m);
               }
@@ -416,8 +435,12 @@ class wp_comment_image{
               document.getElementById("wpci-button").value="Add more...";
               document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
               document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
+              document.getElementById("wpci-drop-text").style.paddingTop = "13px";
+              document.getElementById("wpci-drop-text").style.paddingLeft = "15px";
               document.getElementById("wpci-list").style.display="block";
             }
+            document.getElementById("wpci-list").style.boxShadow = "0 0 0";
+            document.getElementById("wpci-list").style.borderStyle = "dashed";
             for (++i; i < p.length; i++) {
               t += ", " + p[i].children[0].value;
             }
@@ -436,13 +459,15 @@ class wp_comment_image{
           if(window.File && window.FileList && window.FileReader){
             document.getElementById("wpci-list").innerHTML = "";
             document.getElementById("wpci-list").style.display="none";
+            document.getElementById("wpci-drop-text").style.paddingTop = "3px";
+            document.getElementById("wpci-drop-text").style.paddingLeft = "5px";
             wpciDnd();
           }else{
             document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
           }
         }
         function wpciDelete(i) {
-          document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-img-" + i));
+          document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-item-" + i));
           wpciUpdateHTML(0);
         }
       </script>
