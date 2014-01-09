@@ -111,7 +111,7 @@ class wp_comment_image{
       <label><input type="radio" name="wpci_input" value="1" <?php if ($this->options['wpci_input'] == '1') { ?> checked="checked"<?php } ?>/> Automatic, may not work depending on your theme</label><br/>
       <label><input type="radio" name="wpci_input" value="0" <?php if ($this->options['wpci_input'] == '0') { ?> checked="checked"<?php } ?>/> Manual, add <span style="padding:2px 5px;border:1px solid #aaa;">enctype="multipart/form-data"</span> and <span style="padding:2px 5px;border:1px solid #aaa;">&lt;input type="file" name="image[]" multiple/&gt;</span> to comment form</label></p>
       <p>Text before input button (Optional):<br/>
-      <textarea rows="5" cols="50" class="large-text" name="wpci_input_text"><?php echo htmlentities($this->options['wpci_input_text']); ?></textarea><br/>
+      <textarea rows="5" cols="50" class="large-text" name="wpci_input_text"><?php echo $this->options['wpci_input_text']; ?></textarea><br/>
       * Use [wpci_limit] as maximum upload files and [wpci_size] as maximum file size</p>
       <input type="submit" class="button button-primary" name="wpci_update" />
     </form>
@@ -133,12 +133,10 @@ class wp_comment_image{
                   $this->message = 'Error create directory';
                 }
               }
-            }
-            if ($option == 'wpci_url') {
+            } elseif ($option == 'wpci_url') {
               if (substr($_POST[$option], -1) !== '/')
                 $_POST[$option] .= '/';
-            }
-            if ($option == 'wpci_size') {
+            } elseif ($option == 'wpci_size') {
               $_POST[$option] = round(min($_POST[$option], $this->upload_limit), 2);
             }
             update_option($option, $_POST[$option]);
@@ -188,17 +186,15 @@ class wp_comment_image{
   }
 
   function wpci_get_image($comment_id) {
-    if (isset($_POST['wpci_drop_file']) && $_POST['wpci_drop_file'] !== '') {
+    if (isset($_POST['wpci_drop_file']) && !empty($_POST['wpci_drop_file'])) {
       $files = array();
-      $drop_files = explode('|', substr($_POST['wpci_drop_file'], 0, strrpos($_POST['wpci_drop_file'], '|')));
-      $drop_filenames = json_decode(preg_replace('/\\\\(\S)/', '$1', $_POST['wpci_drop_filename']));
-      foreach ($drop_files as $id => $data) {
+      foreach ($_POST['wpci_drop_file'] as $id => $data) {
         $rand_string = substr("abcdefghijklmnopqrstuvwxyz", mt_rand(0, 50), 1).substr(md5(time()), 1);
         $tmp_file = tempnam(sys_get_temp_dir(), $rand_string);
         file_put_contents($tmp_file, base64_decode((strpos($data, ',') !== false?substr($data, strpos($data, ',')+1):$data)));
         $files['tmp_name'][$id] = $tmp_file;
-        if (isset($drop_filenames[$id]))
-          $files['name'][$id] = $drop_filenames[$id];
+        if (isset($_POST['wpci_drop_filename'][$id]))
+          $files['name'][$id] = $_POST['wpci_drop_filename'][$id];
         else
           $files['name'][$id] = '';
       }
@@ -279,7 +275,7 @@ class wp_comment_image{
   function wpci_pre_comment_content($comment) {
     if (!empty($this->images)) {
       foreach ($this->images as $file_name => $et) {
-        $comment .= '<br/><a href="'.$this->options['wpci_url'].$file_name.'" title="'.htmlentities($et[1]).'"><img src="'.$this->options['wpci_url'].$file_name.($et[0]?'-t':'').'.jpg'.'" alt="'.htmlentities($et[1]).'" /></a><br/>';
+        $comment .= '<br/><a href="'.$this->options['wpci_url'].$file_name.'" title="'.$et[1].'"><img src="'.$this->options['wpci_url'].$file_name.($et[0]?'-t':'').'.jpg'.'" alt="'.$et[1].'" /></a><br/>';
       }
     }
     return $comment;
@@ -321,106 +317,104 @@ class wp_comment_image{
    }
  "
 ></span>
-<span id="wpci-drop"
- style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;"
->or drop files here</span>
-<div id="wpci-list" style="display:none;width:98%;max-width:600px;min-height:100px;padding:10px 1%;margin:15px 0 0;border-width:1px 1px 1px;border-style:dashed;border-color:#444;"></div>
-<input id="wpci-drop-file" name="wpci_drop_file" style="display:none;"><input id="wpci-drop-filename" name="wpci_drop_filename" value="" style="display:none;"><span id="wpci-clear"
- style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;"
- onclick="
-   this.style.display=\'none\';
-   document.getElementById(\'wpci-text\').value=\''.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'\';
-   document.getElementById(\'wpci-text\').style.width=\'60%\';
-   document.getElementById(\'wpci-text\').style.paddingRight=\'0.5%\';
-   document.getElementById(\'wpci-error\').style.display=\'none\';
-   document.getElementById(\'wpci-button\').value=\'Choose...\';
-   document.getElementById(\'wpci-drop-file\').value=\'\';
-   document.getElementById(\'wpci-drop-filename\').value=\'\';
-   if(window.File && window.FileList && window.FileReader){
-     document.getElementById(\'wpci-list\').innerHTML = \'\';
-     document.getElementById(\'wpci-list\').style.display=\'none\';
-     wpciDnd();
-   }else{
-     document.getElementById(\'wpci-file-wrap\').innerHTML=document.getElementById(\'wpci-file-wrap\').innerHTML;
-   }
- "
->clear</span>
+<span id="wpci-drop" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:1px;vertical-align:middle;">or drop files here</span>
+<div id="wpci-list" style="display:none;width:98%;max-width:620px;min-height:100px;padding:10px 1%;margin:15px 0 0;border-width:1px 1px 1px;border-style:dashed;border-color:#444;"></div>
+<div id="wpci-list-hidden" style="display:none;"></div>
+<span id="wpci-clear"
+ style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;" onclick="wpciClear()">clear</span>
 <div id="wpci-error" style="color:red;font-size:14px;padding:10px 0;display:none;">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</div>
 </div>
       <script>
         if (window.File && window.FileList && window.FileReader) {
-          var t = "", j = 0, fn = [];
           wpciDnd();
         }
         function wpciDnd() {
           document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
-          document.getElementById("wpci-file").addEventListener("change", FileSelectHandler, false);
+          document.getElementById("wpci-file").addEventListener("change", wpciFileSelectHandler, false);
           var filedrop = document.getElementById("wpci-drop");
-          filedrop.addEventListener("dragover", FileDragHover, false);
-          filedrop.addEventListener("dragleave", FileDragHover, false);
-          filedrop.addEventListener("drop", FileSelectHandler, false);
+          filedrop.addEventListener("dragover", wpciFileDragHover, false);
+          filedrop.addEventListener("dragleave", wpciFileDragHover, false);
+          filedrop.addEventListener("drop", wpciFileSelectHandler, false);
           filedrop.style.display = "inline-block";
         }
-        function FileDragHover(e) {
+        function wpciFileDragHover(e) {
           e.stopPropagation();
           e.preventDefault();
-          //if (e.type == "dragover") {
-          //  document.getElementById("wpci-list").style.display = "block";
-          //} else if (e.type == "dragleave" && document.getElementById("wpci-list").innerHTML == "" ) {
-          //  document.getElementById("wpci-list").style.display = "none";
-          //}
-        }
-        function FileSelectHandler(e) {
-          FileDragHover(e);
-          var files = e.target.files || e.dataTransfer.files;
-          if (files.length) {
-            for (var i = 0; i < files.length-1; i++) {
-              f = files[i];
-              var reader = new FileReader();
-              reader.onload = ParseFile(f, 0);
-              reader.readAsDataURL(f);
-            }
-            var reader = new FileReader();
-            reader.onload = ParseFile(files[i], 1);
-            reader.readAsDataURL(files[i]);
-          } else if (document.getElementById("wpci-list").innerHTML == "" ) {
-            document.getElementById("wpci-list").style.display="none";
+          if (e.type == "dragover") {
+            document.getElementById("wpci-list").style.display = "block";
+          } else if (e.type == "dragleave" && document.getElementById("wpci-list").innerHTML == "" ) {
+            document.getElementById("wpci-list").style.display = "none";
           }
         }
-        function ParseFile(file, o) {
+        function wpciFileSelectHandler(e) {
+          wpciFileDragHover(e);
+          var files = e.target.files || e.dataTransfer.files;
+          if (files.length) {
+            for (var i = 0; i < files.length; i++) {
+              f = files[i];
+              var reader = new FileReader();
+              reader.onload = wpciParseFile(f);
+              reader.readAsDataURL(f);
+            }
+          }
+        }
+        function wpciParseFile(file) {
           return function(e) {
-            if ('.(!is_admin() && $this->options['wpci_limit']?'j < '.$this->options['wpci_limit'].' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
+            var l = document.getElementById("wpci-list");
+            if ('.(!is_admin() && $this->options['wpci_limit']?'l.children.length < '.($this->options['wpci_limit']-1).' && ':'').'(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)'.(!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:'').') {
               var m = e.target.result;
               var d = m.match(/,(.*)$/)[1];
-              if (document.getElementById("wpci-drop-filename").value == "") {
-                fn = [];
-              }
-              var s = document.getElementById("wpci-drop-file").value;
-              if (s.indexOf(d) == -1) {
-                s = s + d + "|";
-                document.getElementById("wpci-drop-file").value = s;
-                document.getElementById("wpci-list").innerHTML += "<label style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:5px;padding:0;line-height:0;\"><!--span style=\"margin:0px;padding:0;position:absolute;top:5px;right:3px;z-index:2;border:none;\">&#10799;</span--><img style=\"max-width:100px;margin:0;padding:0;border:none;\"  src=\"" + m + "\" /></label>";
-                document.getElementById("wpci-list").style.display="block";
-                fn[fn.length] = file.name;
-                j++;
+              if (l.innerHTML.indexOf(d) == -1) {
+                var j = l.children.length;
+                var h = document.getElementById("wpci-list-hidden");
+                h.appendChild(document.createTextNode(file.name));
+                var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\\\'/g, "&#39;");
+                h.innerHTML = "";
+                l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-img-" + j + "\"><input name=\"wpci-drop-filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><img style=\"max-width:100px;margin:0;padding:0;border:none;\"  src=\"" + m + "\" /></div>";
+                l.style.display="block";
+                wpciUpdateHTML();
               }
             } else {
               document.getElementById("wpci-error").style.display="block";
             }
-            if (o && j) {
-              document.getElementById("wpci-clear").style.display="inline-block";
-              document.getElementById("wpci-button").value="Add more...";
-              document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
-              document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
-              t = "";
-              for (i = 0; i < fn.length-1; i++) {
-                t = t + fn[i] + ", ";
-              }
-              t += fn[i];
-              document.getElementById("wpci-text").value = t;
-              document.getElementById("wpci-drop-filename").value = JSON.stringify(fn);
-            }
           }
+        }
+        function wpciUpdateHTML() {
+          var p = document.getElementById("wpci-list").children;
+          if (p.length) {
+            document.getElementById("wpci-clear").style.display="inline-block";
+            document.getElementById("wpci-button").value="Add more...";
+            document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
+            document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
+            var t = "";
+            for (var i = 0; i < p.length-1; i++) {
+              t += p[i].children[0].value + ", ";
+            }
+            t += p[i].children[0].value;
+            document.getElementById("wpci-text").value = t;
+            document.getElementById("wpci-list").style.display="block";
+          } else {
+            wpciClear();
+          }
+        }
+        function wpciClear() {
+          document.getElementById("wpci-clear").style.display="none";
+          document.getElementById("wpci-text").value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'";
+          document.getElementById("wpci-text").style.width="60%";
+          document.getElementById("wpci-text").style.paddingRight="0.5%";
+          document.getElementById("wpci-error").style.display="none";
+          document.getElementById("wpci-button").value="Choose...";
+          if(window.File && window.FileList && window.FileReader){
+            document.getElementById("wpci-list").innerHTML = "";
+            document.getElementById("wpci-list").style.display="none";
+            wpciDnd();
+          }else{
+            document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
+          }
+        }
+        function wpciDelete(i) {
+          document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-img-" + i));
+          wpciUpdateHTML();
         }
       </script>
     ';
@@ -456,7 +450,7 @@ class wp_comment_image{
       echo '<p>Select to delete image:</p>';
       foreach ($files as $file) {
         $file = substr($file, strrpos($file, '/')+1);
-        echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.htmlentities($file).'" /></label>';
+        echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.$file.'" /></label>';
       }
     } else
       echo 'No image';
