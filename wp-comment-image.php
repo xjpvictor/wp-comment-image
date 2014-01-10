@@ -7,7 +7,7 @@ Author: xjpvictor Huang
 Description: A wordpress plugin to allow using images for comments.
 */
 
-if(!class_exists('wp_comment_image')):
+if (!class_exists('wp_comment_image')):
 class wp_comment_image{
 
   var $options_key = array('wpci_url', 'wpci_dir', 'wpci_width', 'wpci_size', 'wpci_limit', 'wpci_class', 'wpci_input', 'wpci_input_text');
@@ -17,14 +17,14 @@ class wp_comment_image{
   var $upload_limit = '';
   var $incre_id = '';
 
-  function wp_comment_image(){
+  function wp_comment_image() {
     $this->wpci_init();
     $this->wpci_init_hook();
     if (!empty($_POST))
       $this->wpci_options_update();
   }
 
-  function wpci_init(){
+  function wpci_init() {
     $this->upload_limit = ini_get('upload_max_filesize');
     $this->incre_id = 0;
     $unit = strtolower(substr($this->upload_limit, strlen($this->upload_limit)-1));
@@ -63,16 +63,18 @@ class wp_comment_image{
     }
   }
 
-  function wpci_init_hook(){
+  function wpci_init_hook() {
     if (is_admin()) {
       add_filter('delete_comment', array(&$this, 'wpci_delete_comment'));
       add_action('admin_menu', array(&$this, 'wpci_options_page'));
       add_action('add_meta_boxes', array(&$this, 'wpci_add_meta_boxes'));
       add_action('comment_save_pre', array(&$this, 'wpci_edit_comment'));
+      add_action('admin_head', array(&$this, 'wpci_head'));
     } else {
       add_filter('comment_text', array(&$this, 'wpci_comment_text'));
       add_filter('wp_insert_comment', array(&$this, 'wpci_insert_comment'), 99);
       add_filter('comment_form_field_comment', array(&$this, 'wpci_comment_form'), 99);
+      add_action('wp_head', array(&$this, 'wpci_head'));
     }
     register_deactivation_hook( __FILE__, array(&$this, 'wpci_deactivate'));
   }
@@ -83,11 +85,11 @@ class wp_comment_image{
     }
   }
 
-  function wpci_options_page(){
+  function wpci_options_page() {
     add_options_page('WP Comment Image Option', 'WP Comment Image', 'manage_options', 'wp-comment-image.php', array(&$this, 'options_page'));
   }
 
-  function options_page(){
+  function options_page() {
   ?>
   <div class="wrap">
     <h2>WP Comment Image</h2>
@@ -296,43 +298,75 @@ class wp_comment_image{
   }
 
   function wpci_upload_input() {
-    if (!is_admin())
+    if (!is_admin()) {
       add_action('wp_footer', array(&$this, 'wpci_footer'), 5);
-    else
+    } else {
       add_action('admin_footer', array(&$this, 'wpci_footer'), 5);
+    }
 
     return '
-<div id="wpci-input" style="padding:0 0 15px;width:99%;position:relative;'.(is_admin()?'margin:15px 0;':'margin:0;top:-1px;').'">
-<input type="text" name="wpci-text" id="wpci-text" readonly
-  style="width:60%;color:#4c4c4c;background-color:#f6f6f6;height:1.3em;line-height:1.3em;padding:5px 0.5%;margin:0;text-align:left;border-width:1px 0 1px 1px;border-color:#000;border-style:solid;position:relative;z-index:3;box-sizing:content-box;-moz-box-sizing:content-box;cursor:default;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
- value="'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'"
-><input type="button" id="wpci-button" value="Choose..."
- style="width:120px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0px;margin:0;text-align:center;border-width:1px 1px 1px 0px;border-color:#000;border-style:solid;background-color:#e3e3e3;box-sizing:content-box;-moz-box-sizing:content-box;vertical-align:top;'.(!is_admin()?'border-top:none;':'').'"
-><span id="wpci-file-wrap"
- style="position:absolute;opacity:0;top:0;left:61%;width:120px;height:1.5em;border:none;margin:0;padding:0;z-index:2;box-sizing:content-box;-moz-box-sizing:content-box;"
->
+<div id="wpci-input">
+<p id="wpci-input-wrap">
+<span id="wpci-button-wrap">
+<span id="wpci-clear" onclick="wpciClear()">Clear</span>
+<span id="wpci-button">Upload image</span>
+<span id="wpci-file-wrap">
 <input type="file"'.((!is_admin() && $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
- style="width:120px;height:1.3em;height:100%;border:none;margin:0;padding:0;box-sizing:content-box;-moz-box-sizing:content-box;"
  onchange="
-   if(!window.File || !window.FileList || !window.FileReader){
+   if (!window.File || !window.FileList || !window.FileReader) {
+     document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';
+     wpciAddClass(\'wpci-clear\', \'wpci-show\');
      var files=this.files, file=\'\';
-     for(var i=0;i<files.length-1;i++){
+     for (var i=0;i<files.length-1;i++) {
       file += files[i].name + \', \';
      }
      file += files[i].name;
-     document.getElementById(\'wpci-text\').value=file;
-     document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';
-     document.getElementById(\'wpci-clear\').style.display=\'inline-block\';
+     document.getElementById(\'wpci-list\').innerHTML=file;
+     wpciAddClass(\'wpci-list\', \'wpci-show-nf\');
    }
  "
 ></span>
-<div id="wpci-drop-text" style="display:none;color:#4c4c4c;font-size:16px;line-height:1.3em;padding:3px 5px;margin:15px 0 0;vertical-align:middle;">or drop files here</div>
-<div id="wpci-list" style="display:none;width:98%;max-width:620px;min-height:100px;padding:52px 1% 10px;position:relative;top:-52px;margin:15px 0 -52px;border-width:1px 1px 1px;border-style:dashed;border-color:#444;"></div>
+</span>
+<span id="wpci-drop-text">or drop files here</span>
+</p>
+<noscript><p>Javascript is required for advanced features</p></noscript>
+<div id="wpci-list"></div>
 <div id="wpci-list-hidden" style="display:none;"></div>
-<span id="wpci-clear"
- style="height:1.2em;line-height:1.2em;font-size:14px;padding:3px;left:61%;top:1px;position:absolute;z-index:4;background-color:#eee;color:#;border-width:0 1px 1px;border-color:#ccc;border-style:solid;margin:0 0 0 -42px;display:none;cursor:pointer;" onclick="wpciClear()">clear</span>
-<div id="wpci-error" style="color:red;font-size:14px;padding:10px 0;display:none;">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</div>
-</div>';
+</div>
+<p id="wpci-error">* Some files will not be uploaded. Only png, gif, jpg are allowed'.(!is_admin()?' and '.(!$this->options['wpci_limit']?'':'maximum '.$this->options['wpci_limit'].' images, ').(!$this->options['wpci_size']?'':'each file less than '.$this->options['wpci_size'].'M'):'').'.</p>
+<p id="wpci-text">'.(!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':'').'</p>
+  ';
+  }
+
+  function wpci_head() {
+?>
+<style>
+#wpci-input{padding:0;width:90%;max-width:650px;margin:0;}
+#wpci-input.wpci-drag{position:static;padding:10px;margin:15px 0;border:1px solid #666;box-shadow:0 0 2px #000;min-height:120px;}
+#wpci-input-wrap{padding:0 !important;margin:1em 0 !important;}
+#wpci-button-wrap{padding:0;margin:0;background-color:#e3e3e3;border:none;display:inline-block;position:relative;}
+#wpci-clear{height:1.3em;line-height:1.3em;padding:5px 20px;margin:0;background-color:transparent;border-width:0 1px 0 0;border-style:solid;border-color:#bbb;color:#4c4c4c;text-align:center;display:none;cursor:pointer;}
+#wpci-clear.wpci-show{display:inline-block;}
+#wpci-button{width:160px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0;margin:0 auto;text-align:center;border:none;background-color:transparent;display:inline-block;}
+#wpci-file-wrap{position:absolute;opacity:0;top:0;right:0;width:160px;height:100%;border:none;margin:0;padding:0;z-index:2;}
+#wpci-file{width:100%;height:100%;border:none;margin:0;padding:0;}
+#wpci-drop-text{display:none;padding:5px;margin:0;}
+#wpci-drop-text.wpci-show{display:inline-block;}
+#wpci-list{display:none;width:98%;max-width:620px;padding:10px 0;margin:0 0 1em;border:1px dashed #000;}
+#wpci-list.wpci-show{display:block;}
+#wpci-list.wpci-show-nf{display:block;padding:0 10px;line-height:1.8em;}
+#wpci-input.wpci-drag #wpci-list{display:block;border:none;min-height:100px;}
+.wpci-list-items{display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;}
+.wpci-list-rm{margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;}
+.wpci-list-images{width:100% !important;max-width:100px !important;margin:0 !important;padding:0 !important;border:none !important;}
+#wpci-text{border:none;padding:0 0 1em !important;}
+#wpci-error{color:red;display:none;padding:0 0 1em !important;}
+#wpci-error.wpci-show{display:block;}
+#wpci-image-list label{display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;}
+#wpci-image-list input{margin:0px;position:absolute;top:3px;left:3px;z-index:2;}
+#wpci-image-list img{max-width:100px;margin:0;padding:0;}
+</style>
+<?php
   }
 
   function wpci_footer() {
@@ -341,39 +375,44 @@ class wp_comment_image{
   if (window.File && window.FileList && window.FileReader) {
     var out = true;
     var timeout = -1;
+    var c = 0;
     wpciDnd();
-    document.getElementById("wpci-drop-text").style.display = "block";
+    wpciAddClass("wpci-drop-text", "wpci-show");
   }
   function wpciDnd() {
     document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     document.getElementById("wpci-file").addEventListener("change", wpciFileSelectHandler, false);
-    document.getElementById("wpci-list").addEventListener("drop", wpciFileSelectHandler, false);
+    document.getElementById("wpci-input").addEventListener("drop", wpciFileSelectHandler, false);
     var filedrop = document.getElementsByTagName("body")[0];
     filedrop.addEventListener("dragover", wpciFileDragHover, false);
     filedrop.addEventListener("dragleave", wpciFileDragHover, false);
+    filedrop.addEventListener("drop", wpciCancelDrag, false);
+  }
+  function wpciAddClass(id, cls) {
+    var elem = document.getElementById(id);
+    elem.classList.add(cls);
+  }
+  function wpciRemoveClass(id, cls) {
+    var elem = document.getElementById(id);
+    elem.classList.remove(cls);
+  }
+  function wpciCancelDrag(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    wpciRemoveClass("wpci-input", "wpci-drag");
   }
   function wpciFileDragHover(e) {
     e.stopPropagation();
     e.preventDefault();
     if (e.type == "dragover") {
       out = false;
-      document.getElementById("wpci-drop-text").style.paddingTop = "13px";
-      document.getElementById("wpci-drop-text").style.paddingLeft = "15px";
-      document.getElementById("wpci-list").style.display = "block";
-      document.getElementById("wpci-list").style.boxShadow = "0 0 2px #000";
-      document.getElementById("wpci-list").style.borderStyle = "solid";
+      wpciAddClass("wpci-input", "wpci-drag");
     } else if (e.type == "dragleave") {
       out = true;
       clearTimeout(timeout);
       timeout = setTimeout(function() {
         if (out) {
-          if (document.getElementById("wpci-list").innerHTML == "") {
-            document.getElementById("wpci-list").style.display = "none";
-            document.getElementById("wpci-drop-text").style.paddingTop = "3px";
-            document.getElementById("wpci-drop-text").style.paddingLeft = "5px";
-          }
-          document.getElementById("wpci-list").style.boxShadow = "0 0 0";
-          document.getElementById("wpci-list").style.borderStyle = "dashed";
+          wpciRemoveClass("wpci-input", "wpci-drag");
         }
       }, 100);
     }
@@ -385,12 +424,12 @@ class wp_comment_image{
       for (var i = 0; i < files.length; i++) {
         f = files[i];
         var reader = new FileReader();
-        reader.onload = wpciParseFile(f);
+        reader.onload = wpciParseFile(f, files.length);
         reader.readAsDataURL(f);
       }
     }
   }
-  function wpciParseFile(file) {
+  function wpciParseFile(file, fl) {
     return function(e) {
       var l = document.getElementById("wpci-list");
       if (<?php echo (!is_admin() && $this->options['wpci_limit']?'l.children.length < '.$this->options['wpci_limit'].' && ':'');?>(file.type.indexOf("image/png") == 0 || file.type.indexOf("image/jpeg") == 0 || file.type.indexOf("image/gif") == 0)<?php echo (!is_admin() && $this->options['wpci_size']?' && file.size / 1024 / 1024 < '.$this->options['wpci_size']:''); ?>) {
@@ -402,20 +441,36 @@ class wp_comment_image{
           h.appendChild(document.createTextNode(file.name));
           var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\'/g, "&#39;");
           h.innerHTML = "";
-          l.innerHTML += "<div style=\"display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span style=\"margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
-          wpciUpdateHTML(j);
-          wpciUpdateCanvas(j, m);
+          l.innerHTML += "<div class=\"wpci-list-items\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span class=\"wpci-list-rm\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
+          wpciUpdateHTML();
+          wpciUpdateCanvas(j, m, fn);
         }
         m = "";
         d = "";
       } else {
-        document.getElementById("wpci-error").style.display="block";
+        wpciAddClass("wpci-error", "wpci-show");
+      }
+      if (++c == fl) {
+        setTimeout(function() {
+          wpciRemoveClass("wpci-input", "wpci-drag");
+        }, 100);
+        c = 0;
       }
     }
   }
-  function wpciUpdateCanvas(i, m) {
+  function wpciUpdateHTML() {
+    var p = document.getElementById("wpci-list").children;
+    if (p.length) {
+      wpciAddClass("wpci-clear", "wpci-show");
+      document.getElementById("wpci-button").innerHTML="Add more...";
+      wpciAddClass("wpci-list", "wpci-show");
+    } else {
+      wpciClear();
+    }
+  }
+  function wpciUpdateCanvas(i, m, fn) {
     var img = new Image();
-    img.onload = function(i, m) {
+    img.onload = function(i, m, fn) {
       return function() {
         var c = document.getElementById("wpci-list-canvas-" + i);
         var mw = c.style.maxWidth.match(/[0-9]+/);
@@ -428,56 +483,26 @@ class wp_comment_image{
         c.height = img.height;
         ctx.drawImage(img, 0, 0, img.width, img.height);
         m = c.toDataURL();
-        document.getElementById("wpci-list-image-" + i).innerHTML = "<img src=\"" + m + "\" style=\"max-width:100px;margin:0;padding:0;border:none;\"/>";
+        document.getElementById("wpci-list-image-" + i).innerHTML = "<img src=\"" + m + "\" class=\"wpci-list-images\" alt=\"" + fn + "\"/>";
       };
-    }(i, m);
+    }(i, m, fn);
     img.src = m;
   }
-  function wpciUpdateHTML(i) {
-    var p = document.getElementById("wpci-list").children;
-    if (p.length) {
-      if (i) {
-        var t = document.getElementById("wpci-text").value + ", " + p[i].children[0].value;;
-      } else {
-        var t = p[i].children[0].value;
-        document.getElementById("wpci-clear").style.display="inline-block";
-        document.getElementById("wpci-button").value="Add more...";
-        document.getElementById("wpci-text").style.width = document.getElementById("wpci-text").offsetWidth - document.getElementById("wpci-input").offsetWidth * 0.01 - 45 + "px";
-        document.getElementById("wpci-text").style.paddingRight = document.getElementById("wpci-input").offsetWidth * 0.005 + 45 + "px";
-        document.getElementById("wpci-drop-text").style.paddingTop = "13px";
-        document.getElementById("wpci-drop-text").style.paddingLeft = "15px";
-        document.getElementById("wpci-list").style.display="block";
-      }
-      document.getElementById("wpci-list").style.boxShadow = "0 0 0";
-      document.getElementById("wpci-list").style.borderStyle = "dashed";
-      for (++i; i < p.length; i++) {
-        t += ", " + p[i].children[0].value;
-      }
-      document.getElementById("wpci-text").value = t;
-    } else {
-      wpciClear();
-    }
-  }
   function wpciClear() {
-    document.getElementById("wpci-clear").style.display="none";
-    document.getElementById("wpci-text").value="<?php echo (!is_admin() && !empty($this->options['wpci_input_text'])?str_replace(array('[wpci_limit]', '[wpci_size]'), array($this->options['wpci_limit'], $this->options['wpci_size']), $this->options['wpci_input_text']):'').(is_admin()?'You may add png/gif/jpg images':''); ?>";
-    document.getElementById("wpci-text").style.width="60%";
-    document.getElementById("wpci-text").style.paddingRight="0.5%";
-    document.getElementById("wpci-error").style.display="none";
-    document.getElementById("wpci-button").value="Choose...";
-    if(window.File && window.FileList && window.FileReader){
-      document.getElementById("wpci-list").innerHTML = "";
-      document.getElementById("wpci-list").style.display="none";
-      document.getElementById("wpci-drop-text").style.paddingTop = "3px";
-      document.getElementById("wpci-drop-text").style.paddingLeft = "5px";
+    wpciRemoveClass("wpci-clear", "wpci-show");
+    wpciRemoveClass("wpci-error", "wpci-show");
+    document.getElementById("wpci-button").innerHTML="Upload image";
+    wpciRemoveClass("wpci-list", "wpci-show");
+    document.getElementById("wpci-list").innerHTML = "";
+    if (window.File && window.FileList && window.FileReader) {
       wpciDnd();
-    }else{
+    } else {
       document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     }
   }
   function wpciDelete(i) {
     document.getElementById("wpci-list").removeChild(document.getElementById("wpci-list-item-" + i));
-    wpciUpdateHTML(0);
+    wpciUpdateHTML();
   }
   function wpciSelectAll(v) {
     var elem = document.getElementById("wpci-image-list").children;
@@ -491,7 +516,7 @@ class wp_comment_image{
 
   function wpci_comment_form($form = '') {
     if (!empty($form) && $this->options['wpci_input']) {
-      $form = str_replace('<textarea ', '<textarea style="margin-bottom:0;vertical-align:bottom;" ', $form).$this->wpci_upload_input();
+      $form .= $this->wpci_upload_input();
     }
     return $form;
   }
@@ -519,12 +544,12 @@ class wp_comment_image{
       echo '<p><input type="checkbox" name="wpci_selectall" onclick="if (this.checked) {wpciSelectAll(1);} else {wpciSelectAll(0);}"> Select to delete image:</p><div id="wpci-image-list">';
       foreach ($files as $file) {
         $file = substr($file, strrpos($file, '/')+1);
-        echo '<label style="display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:0 15px 15px 0;padding:0;line-height:0;"><input style="margin:0px;position:absolute;top:3px;left:3px;z-index:2;" type="checkbox" name="wpci_del['.$file.']" value="1" /><img style="max-width:100px;margin:0;padding:0;"  src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.$file.'" /></label>';
+        echo '<label><input type="checkbox" name="wpci_del['.$file.']" value="1" /><img src="'.$this->options['wpci_url'].$file.(file_exists($this->options['wpci_dir'].$file.'-t.jpg')?'-t.jpg':'').'" alt="'.$file.'" /></label>';
       }
       echo '</div>';
     } else
       echo 'No image';
-    echo '<br/>'.$this->wpci_upload_input();
+    echo $this->wpci_upload_input();
     return true;
   }
 
