@@ -19,6 +19,10 @@ A wordpress plugin to allow using images for comments.
 
 * Define CSS class of images for easy styling
 
+* Show thumbnails of images to be uploaded and allow removing images from uploading list (Needs browser support)
+
+* Support HTML5 Drag and Drop (Needs browser support)
+
 ## License ##
 
 This work uses MIT license. Feel free to use, modify or distribute. I'll NOT be responsible for any loss caused by this work.
