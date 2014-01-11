@@ -311,7 +311,7 @@ class wp_comment_image{
 <span id="wpci-clear" onclick="wpciClear()">Clear</span>
 <span id="wpci-button">Upload image</span>
 <span id="wpci-file-wrap">
-<input type="file"'.((!is_admin() && $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
+<input type="file"'.((is_admin() || $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
  onchange="
    if (!window.File || !window.FileList || !window.FileReader) {
      document.getElementById(\''.(!is_admin()?'wpci-input\').parentNode':'post\')').'.enctype=\'multipart/form-data\';
@@ -440,9 +440,9 @@ class wp_comment_image{
     return function(e) {
       var elem = document.getElementById("wpci-progress");
       var ew = elem.offsetWidth;
-      var w = document.getElementById("wpci-list-wrap").offsetWidth * (++fi) / <?php echo (!is_admin() && $this->options['wpci_limit']?'(Math.min(fl, '.$this->options['wpci_limit'].'))':'fl');?>;
+      var w = document.getElementById("wpci-list-wrap").offsetWidth * <?php echo (!is_admin() && $this->options['wpci_limit']?'(Math.min(++fi, '.$this->options['wpci_limit'].')) / (Math.min(fl, '.$this->options['wpci_limit'].'))':'++fi / fl');?>;
       var ts = 1;
-      var os =  (w - ew) / 10;
+      var os = (w - ew) / 10;
       function wpciUpdateWidth() {
         ew = elem.offsetWidth + os;
         if (ew < w) {
