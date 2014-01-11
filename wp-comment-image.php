@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Comment Image
 Plugin URI: https://github.com/xjpvictor/wp-comment-image
-Version: 0.0.2
+Version: 0.0.3
 Author: xjpvictor Huang
 Description: A wordpress plugin to allow using images for comments.
 */
