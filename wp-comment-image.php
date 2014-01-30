@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Comment Image
 Plugin URI: https://github.com/xjpvictor/wp-comment-image
-Version: 0.0.3
+Version: 0.0.4
 Author: xjpvictor Huang
 Description: A wordpress plugin to allow using images for comments.
 */
@@ -353,7 +353,7 @@ class wp_comment_image{
 #wpci-button{width:160px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0;margin:0 auto;text-align:center;border:none;background-color:transparent;display:inline-block;}
 #wpci-file-wrap{position:absolute;opacity:0;top:0;right:0;width:160px;height:100%;border:none;margin:0;padding:0;z-index:2;}
 #wpci-file{width:100%;height:100%;border:none;margin:0;padding:0;}
-#wpci-drop-text{display:none;padding:5px;margin:0;}
+#wpci-drop-text{display:none;padding:0px;margin:0;}
 #wpci-drop-text.wpci-show{display:inline-block;}
 #wpci-list-wrap{display:none;width:98%;max-width:620px;min-height:100px;padding:0 0 10px;margin:0 0 1em;border:1px dashed #000;}
 #wpci-list-wrap.wpci-show{display:block;}
@@ -384,7 +384,6 @@ class wp_comment_image{
     wpciAddClass("wpci-drop-text", "wpci-show");
   }
   function wpciDnd() {
-    document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     document.getElementById("wpci-file").addEventListener("change", wpciFileSelectHandler, false);
     document.getElementById("wpci-input").addEventListener("drop", wpciFileSelectHandler, false);
     var filedrop = document.getElementsByTagName("body")[0];
@@ -425,6 +424,7 @@ class wp_comment_image{
     }
   }
   function wpciFileSelectHandler(e) {
+    document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     wpciFileDragHover(e);
     var files = e.target.files || e.dataTransfer.files;
     if (files.length) {
