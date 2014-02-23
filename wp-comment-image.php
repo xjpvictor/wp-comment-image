@@ -384,6 +384,7 @@ class wp_comment_image{
     wpciAddClass("wpci-drop-text", "wpci-show");
   }
   function wpciDnd() {
+    document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     document.getElementById("wpci-file").addEventListener("change", wpciFileSelectHandler, false);
     document.getElementById("wpci-input").addEventListener("drop", wpciFileSelectHandler, false);
     var filedrop = document.getElementsByTagName("body")[0];
@@ -424,7 +425,6 @@ class wp_comment_image{
     }
   }
   function wpciFileSelectHandler(e) {
-    document.getElementById("wpci-file-wrap").innerHTML=document.getElementById("wpci-file-wrap").innerHTML;
     wpciFileDragHover(e);
     var files = e.target.files || e.dataTransfer.files;
     if (files.length) {
@@ -435,6 +435,7 @@ class wp_comment_image{
         reader.readAsDataURL(f);
       }
     }
+    wpciDnd();
   }
   function wpciParseFile(file, fl, fi) {
     return function(e) {
