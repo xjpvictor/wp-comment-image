@@ -215,10 +215,10 @@ class wp_comment_image{
     if ($this->incre_id) {
       $file_list = $this->wpci_get_image_list($comment_id);
       if (!empty($file_list)) {
-        foreach ($file_list as $file) {
-          $file = substr($file, strrpos($file, '/')+1);
-          $j = max($j, (int)substr($file, strpos($file, '-')+1, strpos($file, '.')-strpos($file, '-')-1)+1);
-        }
+        natsort($file_list);
+        $file = $file_list[count($file_list)-1];
+        $file = substr($file, strrpos($file, '/')+1);
+        $j =(int)substr($file, strpos($file, '-')+1, strpos($file, '.')-strpos($file, '-')-1)+1;
       }
     }
 
