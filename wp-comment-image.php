@@ -15,7 +15,6 @@ class wp_comment_image{
   var $message = '';
   var $images = array();
   var $upload_limit = '';
-  var $incre_id = '';
 
   function wp_comment_image() {
     $this->wpci_init();
@@ -26,7 +25,6 @@ class wp_comment_image{
 
   function wpci_init() {
     $this->upload_limit = ini_get('upload_max_filesize');
-    $this->incre_id = 0;
     $unit = strtolower(substr($this->upload_limit, strlen($this->upload_limit)-1));
     switch($unit) {
     case 'g':
@@ -173,7 +171,6 @@ class wp_comment_image{
 
   function wpci_edit_comment($comment_content) {
     $comment_id = $_POST['comment_ID'];
-    $this->incre_id = 1;
 
     if ($this->wpci_get_image($comment_id))
       $comment_content = $this->wpci_pre_comment_content($comment_content);
@@ -211,16 +208,6 @@ class wp_comment_image{
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $i = 0;
-    $j = 0;
-    if ($this->incre_id) {
-      $file_list = $this->wpci_get_image_list($comment_id);
-      if (!empty($file_list)) {
-        natsort($file_list);
-        $file = $file_list[count($file_list)-1];
-        $file = substr($file, strrpos($file, '/')+1);
-        $j =(int)substr($file, strpos($file, '-')+1, strpos($file, '.')-strpos($file, '-')-1)+1;
-      }
-    }
 
     if (is_string($files['name'])) {
       $files['name'] = array($files['name']);
@@ -237,7 +224,7 @@ class wp_comment_image{
         $type = finfo_file($finfo, $tmp_file);
         if ($type == 'image/jpeg' || $type == 'image/png' || $type == 'image/gif') {
           $ext = str_replace('jpeg', 'jpg', substr($type, strpos($type, '/')+1));
-          $file_name = $comment_id.'-'.($i+$j).'-'.time().'.'.$ext;
+          $file_name = $comment_id.'-'.time().'.'.$ext;
           $image = wp_get_image_editor($tmp_file);
           if (!is_wp_error($image)) {
             $size = $image->get_size();
@@ -555,9 +542,10 @@ class wp_comment_image{
 
   function wpci_get_image_list($comment_id) {
     $files = glob($this->options['wpci_dir'].$comment_id.'-*', GLOB_NOSORT);
-    if (!empty($files)) {
+    if ($files) {
       $thumbs = glob($this->options['wpci_dir'].$comment_id.'-*-t.jpg', GLOB_NOSORT);
       $files = array_diff($files, $thumbs);
+      natsort($files);
     }
     return $files;
   }
