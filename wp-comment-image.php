@@ -224,7 +224,7 @@ class wp_comment_image{
         $type = finfo_file($finfo, $tmp_file);
         if ($type == 'image/jpeg' || $type == 'image/png' || $type == 'image/gif') {
           $ext = str_replace('jpeg', 'jpg', substr($type, strpos($type, '/')+1));
-          $file_name = $comment_id.'-'.time().'.'.$ext;
+          $file_name = $comment_id.'-'.time().$i.'.'.$ext;
           $image = wp_get_image_editor($tmp_file);
           if (!is_wp_error($image)) {
             $size = $image->get_size();
