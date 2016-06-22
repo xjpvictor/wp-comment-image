@@ -10,7 +10,7 @@ Description: A wordpress plugin to allow using images for comments.
 if (!class_exists('wp_comment_image')):
 class wp_comment_image{
 
-  var $options_key = array('wpci_url', 'wpci_dir', 'wpci_width', 'wpci_size', 'wpci_limit', 'wpci_class', 'wpci_input', 'wpci_input_text');
+  var $options_key = array('wpci_url', 'wpci_dir', 'wpci_width', 'wpci_size', 'wpci_limit', 'wpci_class', 'wpci_input', 'wpci_input_text', 'wpci_button_text', 'wpci_drag_text', 'wpci_cancel_text', 'wpci_upload_more_text');
   var $options = array();
   var $message = '';
   var $images = array();
@@ -36,7 +36,7 @@ class wp_comment_image{
     }
     $this->upload_limit = round((int)$this->upload_limit / 1024 / 1024, 2);
 
-    $options_default = array(site_url('/wp-content/comment-images/'), ABSPATH.'wp-content/comment-images/', '200', min(10, $this->upload_limit), '10', 'wpci', '1', 'You may add up to [wpci_limit] png/gif/jpg images (less than [wpci_size]M each)');
+    $options_default = array(site_url('/wp-content/comment-images/'), ABSPATH.'wp-content/comment-images/', '200', min(10, $this->upload_limit), '10', 'wpci', '1', 'You may add up to [wpci_limit] png/gif/jpg images (less than [wpci_size]M each)', 'Upload image', 'or drop files here', 'Cancel', 'Add more...');
 
     foreach ($this->options_key as $key => $option_key) {
       $this->options[$option_key] = get_option($option_key);
@@ -110,7 +110,15 @@ class wp_comment_image{
       <p>Add upload button (Optional):<br/>
       <label><input type="radio" name="wpci_input" value="1" <?php if ($this->options['wpci_input'] == '1') { ?> checked="checked"<?php } ?>/> Automatic, may not work depending on your theme</label><br/>
       <label><input type="radio" name="wpci_input" value="0" <?php if ($this->options['wpci_input'] == '0') { ?> checked="checked"<?php } ?>/> Manual, add <span style="padding:2px 5px;border:1px solid #aaa;">enctype="multipart/form-data"</span> and <span style="padding:2px 5px;border:1px solid #aaa;">&lt;input type="file" name="image[]" multiple/&gt;</span> to comment form</label></p>
-      <p>Text before input button (Optional):<br/>
+      <p>Upload button text:<br/>
+      <input type="text" class="regular-text" name="wpci_button_text" value="<?php echo htmlentities($this->options['wpci_button_text']); ?>" /></p>
+      <p>Drag upload text:<br/>
+      <input type="text" class="regular-text" name="wpci_drag_text" value="<?php echo htmlentities($this->options['wpci_drag_text']); ?>" /></p>
+      <p>Add upload text:<br/>
+      <input type="text" class="regular-text" name="wpci_upload_more_text" value="<?php echo htmlentities($this->options['wpci_upload_more_text']); ?>" /></p>
+      <p>Cancel text:<br/>
+      <input type="text" class="regular-text" name="wpci_cancel_text" value="<?php echo htmlentities($this->options['wpci_cancel_text']); ?>" /></p>
+      <p>Text after input button (Optional):<br/>
       <textarea rows="5" cols="50" class="large-text" name="wpci_input_text"><?php echo $this->options['wpci_input_text']; ?></textarea><br/>
       * Use [wpci_limit] as maximum upload files and [wpci_size] as maximum file size</p>
       <input type="submit" class="button button-primary" name="wpci_update" />
@@ -295,8 +303,8 @@ class wp_comment_image{
 <div id="wpci-input">
 <p id="wpci-input-wrap">
 <span id="wpci-button-wrap">
-<span id="wpci-clear" onclick="wpciClear()">Clear</span>
-<span id="wpci-button">Upload image</span>
+<span id="wpci-clear" onclick="wpciClear()">'.(!is_admin() && !empty($this->options['wpci_cancel_text']) ? $this->options['wpci_cancel_text'] : 'Cancel').'</span>
+<span id="wpci-button">'.(!is_admin() && !empty($this->options['wpci_button_text']) ? $this->options['wpci_button_text'] : 'Upload image').'</span>
 <span id="wpci-file-wrap">
 <input type="file"'.((is_admin() || $this->options['wpci_limit'] !== '1')?' multiple':'').' id="wpci-file" accept="image/jpeg,image/png,image/gif" name="image[]"
  onchange="
@@ -314,7 +322,7 @@ class wp_comment_image{
  "
 ></span>
 </span>
-<span id="wpci-drop-text">or drop files here</span>
+<span id="wpci-drop-text">'.(!is_admin() && !empty($this->options['wpci_drag_text']) ? $this->options['wpci_drag_text'] : 'or drop files here').'</span>
 </p>
 <noscript><p>Javascript is required for advanced features</p></noscript>
 <div id="wpci-list-wrap">
@@ -335,11 +343,13 @@ class wp_comment_image{
 #wpci-input.wpci-drag{position:static;padding:10px;margin:15px 0;border:1px solid #666;box-shadow:0 0 2px #000;min-height:120px;}
 #wpci-input-wrap{padding:0 !important;margin:1em 0 !important;}
 #wpci-button-wrap{padding:0;margin:0;background-color:#e3e3e3;border:none;display:inline-block;position:relative;}
+#wpci-button-wrap:hover{background:#ddd;}
 #wpci-clear{height:1.3em;line-height:1.3em;padding:5px 20px;margin:0;background-color:transparent;border-width:0 1px 0 0;border-style:solid;border-color:#bbb;color:#4c4c4c;text-align:center;display:none;cursor:pointer;}
 #wpci-clear.wpci-show{display:inline-block;}
 #wpci-button{width:160px;color:#4c4c4c;height:1.3em;line-height:1.3em;padding:5px 0;margin:0 auto;text-align:center;border:none;background-color:transparent;display:inline-block;}
 #wpci-file-wrap{position:absolute;opacity:0;top:0;right:0;width:160px;height:100%;border:none;margin:0;padding:0;z-index:2;}
 #wpci-file{width:100%;height:100%;border:none;margin:0;padding:0;}
+#wpci-file:hover{cursor:pointer;}
 #wpci-drop-text{display:none;padding:0px;margin:0;}
 #wpci-drop-text.wpci-show{display:inline-block;}
 #wpci-list-wrap{display:none;width:98%;max-width:620px;min-height:100px;padding:0 0 10px;margin:0 0 1em;border:1px dashed #000;}
@@ -456,7 +466,7 @@ class wp_comment_image{
           h.appendChild(document.createTextNode(file.name));
           var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\'/g, "&#39;");
           h.innerHTML = "";
-          l.innerHTML += "<div class=\"wpci-list-items\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span class=\"wpci-list-rm\" title=\"Remove\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
+          l.innerHTML += "<div class=\"wpci-list-items\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span class=\"wpci-list-rm\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
           wpciUpdateHTML();
           wpciUpdateCanvas(j, m, fn);
         }
@@ -471,7 +481,7 @@ class wp_comment_image{
     var p = document.getElementById("wpci-list").children;
     if (p.length) {
       wpciAddClass("wpci-clear", "wpci-show");
-      document.getElementById("wpci-button").innerHTML = "Add more...";
+      document.getElementById("wpci-button").innerHTML = "<?php echo (!is_admin() && !empty($this->options['wpci_upload_more_text']) ? $this->options['wpci_upload_more_text'] : 'Add more...'); ?>";
       if (wl = document.getElementById("wpci-limit")) {
         wl.innerHTML = <?php echo $this->options['wpci_size']; ?> - p.length;
       }
@@ -503,7 +513,7 @@ class wp_comment_image{
   function wpciClear() {
     wpciRemoveClass("wpci-clear", "wpci-show");
     wpciRemoveClass("wpci-error", "wpci-show");
-    document.getElementById("wpci-button").innerHTML="Upload image";
+    document.getElementById("wpci-button").innerHTML="<?php echo (!is_admin() && !empty($this->options['wpci_button_text']) ? $this->options['wpci_button_text'] : 'Upload image'); ?>";
     wpciRemoveClass("wpci-list-wrap", "wpci-show");
     document.getElementById("wpci-list").innerHTML = "";
     if (wl = document.getElementById("wpci-limit")) {
