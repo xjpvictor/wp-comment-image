@@ -358,7 +358,7 @@ class wp_comment_image{
 #wpci-list-wrap.wpci-show-nf{display:block;padding:0 10px;line-height:1.8em;}
 #wpci-input.wpci-drag #wpci-list-wrap{display:block;border:none;min-height:100px;}
 .wpci-list-items{display:inline-block;vertical-align:top;position:relative;border:1px solid #000;margin:10px;padding:0;line-height:0;}
-.wpci-list-rm{margin:0px;padding:0px;position:absolute;top:-0.6em;right:-0.7em;z-index:2;font-size:16px;line-height:1em;color:black;cursor:pointer;width:1.2em;height:1.2em;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;}
+.wpci-list-rm{margin:0px;padding:0px;position:absolute;top:-10px;right:-10px;z-index:2;font-size:16px;line-height:19px;color:black;cursor:pointer;width:18px;height:18px;border:1px solid black;border-radius:50%;text-align:center;font-weight:normal;background:#fff;box-shadow:1px 1px 2px #666;font-family:arial !important;}
 .wpci-list-images{width:100% !important;max-width:100px !important;margin:0 !important;padding:0 !important;border:none !important;}
 #wpci-progress{display:block;border:none;width:0;height:3px;width:0;padding:0;margin:0 0 10px;background-color:green;}
 #wpci-text{border:none;padding:0 0 1em !important;}
@@ -466,7 +466,7 @@ class wp_comment_image{
           h.appendChild(document.createTextNode(file.name));
           var fn = h.innerHTML.replace(/\"/g, "&quot;").replace(/\'/g, "&#39;");
           h.innerHTML = "";
-          l.innerHTML += "<div class=\"wpci-list-items\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span class=\"wpci-list-rm\" onclick=\"wpciDelete(" + j + ");\">&#10007;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
+          l.innerHTML += "<div class=\"wpci-list-items\" id=\"wpci-list-item-" + j + "\"><input name=\"wpci_drop_filename[]\" style=\"display:none;\" value=\"" + fn + "\"><textarea name=\"wpci_drop_file[]\" style=\"display:none;\">" + d + "</textarea><span class=\"wpci-list-rm\" onclick=\"wpciDelete(" + j + ");\">&#10005;</span><span id=\"wpci-list-image-" + j + "\"><canvas id=\"wpci-list-canvas-" + j + "\" width=\"100\" height=\"20\" style=\"display:none;max-width:100px;\"></canvas></span></div>";
           wpciUpdateHTML();
           wpciUpdateCanvas(j, m, fn);
         }
